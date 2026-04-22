@@ -1,0 +1,51 @@
+// schema.prisma
+// Single source of truth for the database shape. Everything `prisma migrate`
+// needs to create/update the SQLite file is described here.
+//
+// To apply changes:   npx prisma migrate dev
+// To wipe and redo:   npx prisma migrate reset --force
+// Visual browser:     npx prisma studio
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// Mirrors the `users` table from ../basics/02-basics.sql.
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  age       Int?
+  createdAt DateTime @default(now())
+}
+
+// Author + Book mirror ../basics/03-relationships.sql:
+// one author has many books, each book belongs to exactly one author.
+model Author {
+  id    Int    @id @default(autoincrement())
+  name  String
+  books Book[] // "virtual" side — not a column, it's the relation navigation.
+}
+
+model Book {
+  id       Int    @id @default(autoincrement())
+  title    String
+  year     Int?
+  authorId Int    // the actual foreign key column.
+  author   Author @relation(fields: [authorId], references: [id])
+}
+
+// Accounts for the transaction demo (../basics/05-transactions.sql).
+// NOTE: Prisma's schema DSL has no CHECK constraint, so we can't declare
+// `balance >= 0` here. We enforce it in code in 05-transactions.ts.
+// (You *can* add a CHECK via a raw SQL migration, but it's off-topic for now.)
+model Account {
+  id      Int    @id @default(autoincrement())
+  owner   String
+  balance Int
+}
