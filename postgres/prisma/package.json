@@ -1,0 +1,24 @@
+{
+  "name": "postgres-prisma-learn",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "migrate": "prisma migrate dev",
+    "studio": "prisma studio",
+    "reset": "prisma migrate reset --force",
+    "basics": "tsx 02-basics.ts",
+    "relationships": "tsx 03-relationships.ts",
+    "queries": "tsx 04-queries.ts",
+    "transactions": "tsx 05-transactions.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.22.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "prisma": "^5.22.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}

@@ -1,0 +1,48 @@
+// schema.prisma
+// Single source of truth for the database shape.
+//
+// Apply changes:  npx prisma migrate dev
+// Wipe and redo:  npx prisma migrate reset --force
+// Visual browser: npx prisma studio
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// THE ONLY LINE THAT CHANGED FROM sqlite/prisma/prisma/schema.prisma:
+//   provider = "sqlite"   →   provider = "postgresql"
+// Connection string comes from the DATABASE_URL env var (see .env).
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  age       Int?
+  createdAt DateTime @default(now())
+}
+
+model Author {
+  id    Int    @id @default(autoincrement())
+  name  String
+  books Book[]
+}
+
+model Book {
+  id       Int    @id @default(autoincrement())
+  title    String
+  year     Int?
+  authorId Int
+  author   Author @relation(fields: [authorId], references: [id])
+}
+
+// As in the SQLite version, Prisma's schema DSL has no CHECK constraint;
+// we enforce `balance >= 0` in code inside 05-transactions.ts.
+model Account {
+  id      Int    @id @default(autoincrement())
+  owner   String
+  balance Int
+}
