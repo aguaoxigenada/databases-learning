@@ -1,0 +1,20 @@
+{
+  "name": "redis-client-learn",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "cache": "tsx 01-cache-aside.ts",
+    "rate": "tsx 02-rate-limiter.ts",
+    "leaderboard": "tsx 03-leaderboard.ts",
+    "pipeline": "tsx 04-pipelining.ts"
+  },
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
+  }
+}
