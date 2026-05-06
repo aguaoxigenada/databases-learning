@@ -12,6 +12,32 @@ An organized store of data you can query efficiently. Two big families:
 - Guarantees called **ACID** (Atomicity, Consistency, Isolation, Durability) make concurrent writes safe.
 - Examples: **SQLite**, PostgreSQL, MySQL, SQL Server, Oracle.
 
+What the data looks like — two related tables:
+
+`authors`
+
+| id | name           | country |
+| -- | -------------- | ------- |
+| 1  | Ursula Le Guin | USA     |
+| 2  | Jorge Borges   | AR      |
+
+`books`
+
+| id  | title              | author_id | year |
+| --- | ------------------ | --------- | ---- |
+| 10  | The Dispossessed   | 1         | 1974 |
+| 11  | A Wizard of Earthsea | 1       | 1968 |
+| 12  | Ficciones          | 2         | 1944 |
+
+A query joining them:
+
+```sql
+SELECT b.title, a.name
+FROM books b
+JOIN authors a ON a.id = b.author_id
+WHERE a.country = 'USA';
+```
+
 ### Non-relational (NoSQL)
 
 Umbrella term for anything that isn't a relational table. Main flavors:
@@ -20,6 +46,47 @@ Umbrella term for anything that isn't a relational table. Main flavors:
 - **Key-value stores** (Redis, DynamoDB): simple `key → value` lookups, very fast.
 - **Column-family** (Cassandra, HBase): optimized for huge writes across clusters.
 - **Graph** (Neo4j): nodes and edges, great for relationships like social networks.
+
+What the data looks like in each flavor:
+
+**Document store** (MongoDB) — the author and their books can live in one document, no join needed:
+
+```json
+{
+  "_id": "author_1",
+  "name": "Ursula Le Guin",
+  "country": "USA",
+  "books": [
+    { "title": "The Dispossessed", "year": 1974 },
+    { "title": "A Wizard of Earthsea", "year": 1968 }
+  ]
+}
+```
+
+**Key-value store** (Redis) — just opaque keys pointing at values; you look up by the exact key:
+
+```
+SET  session:abc123   '{"user_id":42,"expires":1714000000}'
+GET  session:abc123
+INCR page_views:home
+```
+
+**Column-family** (Cassandra) — rows grouped by a partition key, with wide, sparse columns optimized for huge write volumes:
+
+```
+partition: user:42
+  ├─ login:2026-04-01T09:00  → "ok"
+  ├─ login:2026-04-02T09:01  → "ok"
+  └─ login:2026-04-03T08:58  → "failed"
+```
+
+**Graph** (Neo4j) — nodes and the edges between them are first-class:
+
+```
+(Ursula:Author)-[:WROTE]->(Dispossessed:Book)
+(Ursula:Author)-[:WROTE]->(Earthsea:Book)
+(Alice:User)-[:FOLLOWS]->(Bob:User)-[:FOLLOWS]->(Carol:User)
+```
 
 Use non-relational when your data is loosely structured, needs to scale horizontally across many machines, or its shape changes often.
 

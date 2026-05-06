@@ -1,6 +1,7 @@
 -- 05-transactions.sql
 -- Goal: see why transactions matter. A transaction is "all or nothing".
 -- Run with:  sqlite3 learn.db < 05-transactions.sql
+-- sqlite3 -header -column learn.db < 05-transactions.sql
 
 DROP TABLE IF EXISTS accounts;
 
@@ -33,6 +34,7 @@ SELECT * FROM accounts;
 -- ROLLBACK explicitly to close it and discard any partial work.
 -- Moral: in a real transfer you'd pair BOTH updates inside one transaction,
 -- so if the credit fails the debit gets undone too — money never vanishes.
+
 BEGIN TRANSACTION;
     UPDATE accounts SET balance = balance - 200 WHERE owner = 'Alice';
 ROLLBACK;

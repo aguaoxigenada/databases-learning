@@ -2,6 +2,7 @@
 -- Goal: go beyond SELECT *. Filter, aggregate, group, and combine.
 -- Assumes 03-relationships.sql has been run (it needs the authors/books tables).
 -- Run with:  sqlite3 learn.db < 04-queries.sql
+-- sqlite3 -header -column learn.db < 04-queries.sql
 
 PRAGMA foreign_keys = ON;
 
@@ -34,7 +35,10 @@ GROUP BY a.id
 HAVING n > 1;
 
 -- Subquery: use one query's result inside another.
-SELECT '--- books by the most prolific author ---' AS section;
+-- Caveat: this version uses `= (... LIMIT 1)`, so when two authors are tied
+-- for the most books, the engine silently picks ONE of them. The result
+-- depends on storage order, not on the question we're actually asking.
+SELECT '--- books by the most prolific author (naive, breaks on ties) ---' AS section;
 SELECT title, year
 FROM books
 WHERE author_id = (
@@ -43,6 +47,38 @@ WHERE author_id = (
     GROUP BY author_id
     ORDER BY COUNT(*) DESC
     LIMIT 1
+);
+
+-- Tie-safe version: same question, but returns ALL authors tied at the top.
+-- Three nested layers, evaluated inside-out:
+--
+--   Layer 1 (innermost): what IS the max book count?
+--                        -> returns a single number, e.g. 2
+--   Layer 2 (middle):    which author_ids hit that count?
+--                        -> returns a list, e.g. [1, 2]
+--   Layer 3 (outer):     fetch those authors' books (joined to author names).
+--
+-- Why three layers? Standard SQL doesn't allow nesting aggregates like
+-- HAVING COUNT(*) = MAX(COUNT(*)), so we compute the max separately,
+-- then compare against it. The JOIN is just to show the author's name
+-- alongside each book.
+SELECT '--- books by the most prolific author (tie-safe) ---' AS section;
+SELECT b.title, b.year, a.name AS author
+FROM books AS b
+JOIN authors AS a ON a.id = b.author_id
+WHERE b.author_id IN (
+    -- Layer 2: author_ids whose book count equals the max.
+    SELECT author_id
+    FROM books
+    GROUP BY author_id
+    HAVING COUNT(*) = (
+        -- Layer 1: the max book count itself (just a number).
+        SELECT COUNT(*)
+        FROM books
+        GROUP BY author_id
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+    )
 );
 
 -- LIMIT / OFFSET for pagination.

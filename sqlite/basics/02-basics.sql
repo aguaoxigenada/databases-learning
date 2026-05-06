@@ -1,6 +1,8 @@
 -- 02-basics.sql
 -- Goal: create your first table, put some rows in it, and read them.
 -- Run with:  sqlite3 learn.db < 02-basics.sql
+-- Try running it with formatting flags to see the difference:                                                    
+-- sqlite3 -header -column learn.db < 02-basics.sql    
 
 -- Start clean so the script is re-runnable.
 DROP TABLE IF EXISTS users;
@@ -24,7 +26,7 @@ INSERT INTO users (name, email, age) VALUES
 
 -- SELECT reads rows.
 SELECT '--- all users ---' AS section;
-SELECT * FROM users;
+SELECT * FROM users;  -- * means every column.
 
 -- Pick specific columns, filter with WHERE, sort with ORDER BY.
 SELECT '--- users older than 27, newest first ---' AS section;

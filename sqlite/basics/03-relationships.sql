@@ -1,8 +1,9 @@
 -- 03-relationships.sql
 -- Goal: model a one-to-many relationship (one author, many books) and query it with JOINs.
 -- Run with:  sqlite3 learn.db < 03-relationships.sql
+-- Try running it with formatting flags to see the difference:                                                    
+-- sqlite3 -header -column learn.db < 03-relationships.sql
 
--- SQLite doesn't enforce foreign keys unless you turn them on. Do it every session.
 PRAGMA foreign_keys = ON;
 
 DROP TABLE IF EXISTS books;
