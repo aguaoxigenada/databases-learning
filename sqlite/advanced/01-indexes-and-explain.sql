@@ -2,6 +2,7 @@
 -- Goal: understand why some queries are slow, how an index fixes them,
 -- and how to *verify* the fix by reading the query plan.
 -- Run with:  sqlite3 advanced.db < 01-indexes-and-explain.sql
+-- sqlite3 -header -column advanced.db < 01-indexes-and-explain.sql
 
 DROP TABLE IF EXISTS products;
 CREATE TABLE products (
@@ -38,6 +39,10 @@ EXPLAIN QUERY PLAN
 SELECT * FROM products WHERE category_id = 5;
 -- You'll see something like: SCAN products
 
+SELECT '--- rows: category_id = 5 (no index — count + first 5) ---' AS section;
+SELECT COUNT(*) AS matching_rows FROM products WHERE category_id = 5;
+SELECT * FROM products WHERE category_id = 5 LIMIT 5;
+
 -- ---------------------------------------------------------------------------
 -- Create an index. Indexes are a separate B-tree structure on disk that maps
 -- (indexed value) -> (row location). They're auto-updated on INSERT/UPDATE.
@@ -49,6 +54,10 @@ SELECT '--- plan WITH the index ---' AS section;
 EXPLAIN QUERY PLAN
 SELECT * FROM products WHERE category_id = 5;
 -- Now: SEARCH products USING INDEX idx_products_category
+
+SELECT '--- rows: category_id = 5 (with index — count + first 5, same data, faster) ---' AS section;
+SELECT COUNT(*) AS matching_rows FROM products WHERE category_id = 5;
+SELECT * FROM products WHERE category_id = 5 LIMIT 5;
 
 -- ---------------------------------------------------------------------------
 -- Composite indexes — order matters.
@@ -63,10 +72,18 @@ SELECT '--- composite index DOES help (filter matches its leading column) ---' A
 EXPLAIN QUERY PLAN
 SELECT * FROM products WHERE category_id = 5 AND price > 50;
 
+SELECT '--- rows: category_id = 5 AND price > 50 (count + first 5) ---' AS section;
+SELECT COUNT(*) AS matching_rows FROM products WHERE category_id = 5 AND price > 50;
+SELECT * FROM products WHERE category_id = 5 AND price > 50 LIMIT 5;
+
 SELECT '--- composite index DOES NOT help (filter skips the leading column) ---' AS section;
 EXPLAIN QUERY PLAN
 SELECT * FROM products WHERE price > 50;
 -- Back to SCAN — the index on (category_id, price) is unusable here.
+
+SELECT '--- rows: price > 50 (count + first 5) ---' AS section;
+SELECT COUNT(*) AS matching_rows FROM products WHERE price > 50;
+SELECT * FROM products WHERE price > 50 LIMIT 5;
 
 -- ---------------------------------------------------------------------------
 -- UNIQUE indexes — double duty: speed AND a constraint.

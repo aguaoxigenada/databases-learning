@@ -3,6 +3,7 @@
 -- complex queries into readable named steps — and to do things a plain
 -- SELECT can't, via recursion.
 -- Run with:  sqlite3 advanced.db < 03-ctes.sql
+-- sqlite3 -header -column advanced.db < 03-ctes.sql
 
 DROP TABLE IF EXISTS sales;
 DROP TABLE IF EXISTS employees;

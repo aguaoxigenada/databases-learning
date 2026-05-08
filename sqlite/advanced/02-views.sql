@@ -2,6 +2,7 @@
 -- Goal: use views to give complex queries a name, so the rest of your
 -- code (or your brain) can treat them like tables.
 -- Run with:  sqlite3 advanced.db < 02-views.sql
+-- sqlite3 -header -column  advanced.db < 02-views.sql
 
 DROP VIEW IF EXISTS active_orders;
 DROP VIEW IF EXISTS customer_lifetime_value;

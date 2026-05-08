@@ -3,6 +3,7 @@
 -- The moment you need "for each row, also tell me something about its
 -- neighbours", reach for a window function.
 -- Run with:  sqlite3 advanced.db < 04-windows.sql
+-- sqlite3 -header -column advanced.db < 04-windows.sql
 
 DROP TABLE IF EXISTS sales;
 

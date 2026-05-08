@@ -36,6 +36,15 @@ FROM seq;
 Two ideas at work:
 
 1. **Recursive CTE = a `for` loop in SQL.** A seed row, a rule for the next row, and a stop condition. `seq` ends up holding `1, 2, …, 10000`.
+
+   | Recursive CTE part            | `for` loop equivalent     |
+   |-------------------------------|---------------------------|
+   | `SELECT 1` (anchor)           | `int i = 1` — initial value |
+   | `WHERE n < 10000`             | loop condition            |
+   | `SELECT n + 1` (recursive)    | `i++`                     |
+   | `UNION ALL`                   | collecting each iteration's value into the result set |
+
+   So `SELECT 1` is just the **base case**: it seeds the CTE with one row where `n = 1`. Change it to `SELECT 5` and `seq` would hold `5, 6, …, 10000`.
 2. **`SELECT … FROM seq` is a row factory.** Each `n` walks in; four columns walk out. Arithmetic on `n` shapes the fake data — concatenation builds names, modulo builds cycling categorical/numeric values.
 
 | Expression          | Type    | Range/shape       | Becomes      |
