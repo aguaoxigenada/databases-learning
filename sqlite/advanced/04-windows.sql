@@ -104,6 +104,14 @@ SELECT region, sold_on, amount,
 FROM sales
 ORDER BY region, sold_on;
 
+
+SELECT '--- each sale vs the next sale in the same region ---' AS section;
+SELECT region, sold_on, amount,
+       LEAD(amount) OVER (PARTITION BY region ORDER BY sold_on)           AS next_amount,
+       LEAD(amount) OVER (PARTITION BY region ORDER BY sold_on) - amount  AS delta
+FROM sales
+ORDER BY region, sold_on;
+
 -- ---------------------------------------------------------------------------
 -- When window functions earn their keep
 -- ---------------------------------------------------------------------------
