@@ -35,7 +35,7 @@ model Author {
 model Book {
   id       Int    @id @default(autoincrement())
   title    String
-  year     Int?
+  year     Int?   // ? means it is optional
   authorId Int    // the actual foreign key column.
   author   Author @relation(fields: [authorId], references: [id])
 }

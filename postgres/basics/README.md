@@ -6,8 +6,8 @@ Parallel to `../../sqlite/basics/`. The SQL you'll write here is 95% identical �
 
 1. `01-concepts.md` — what changes when you go from SQLite (a file) to Postgres (a server). Read this first.
 2. `02-basics.sql` — `users` table: CRUD.
-3. `03-relationships.sql` — `authors` + `books`: foreign keys, joins.
-4. `04-queries.sql` — filters, aggregates, grouping. **New thing**: `ILIKE` vs `LIKE`.
+3. `03-relationships.sql` — `authors` + `books`: foreign keys, joins. See `03-relationships.md` for a walkthrough of LEFT JOIN + GROUP BY + `COUNT`.
+4. `04-queries.sql` — filters, aggregates, grouping. **New thing**: `ILIKE` vs `LIKE`. See `04-queries.md` for a walkthrough of `HAVING`, scalar subqueries, and the `ORDER BY ... LIMIT 1` tie bug.
 5. `05-transactions.sql` — transactions. **New thing**: statement-level vs transaction-level error behaviour.
 
 ## Prerequisite

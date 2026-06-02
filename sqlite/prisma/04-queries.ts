@@ -75,6 +75,27 @@ async function main() {
     );
   }
 
+  // Tie-safe version: fetch all authors tied at the top count.
+  console.log("--- books by the most prolific author (tie-safe) ---");
+  const allTops = await prisma.book.groupBy({
+    by: ["authorId"],
+    _count: { _all: true },
+    orderBy: { _count: { authorId: "desc" } },
+  });
+  console.log(allTops);
+  const maxCount = allTops[0]._count._all;
+  console.log(maxCount);
+  const tiedAuthorIds = allTops
+    .filter((g) => g._count._all === maxCount)
+    .map((g) => g.authorId);
+  console.log(tiedAuthorIds);
+  console.log(
+    await prisma.book.findMany({
+      where: { authorId: { in: tiedAuthorIds } },
+      select: { title: true, year: true },
+    }),
+  );
+
   // LIMIT + ORDER BY = `take` + `orderBy`. OFFSET = `skip`.
   console.log("--- 2 newest books ---");
   console.log(

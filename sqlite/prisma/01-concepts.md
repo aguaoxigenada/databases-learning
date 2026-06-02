@@ -12,6 +12,33 @@ Prisma is three things that work together:
 
 Prisma is **not** a database. It's a layer that sits between your TypeScript code and the real database (SQLite here, but it can point at PostgreSQL, MySQL, etc., by changing the `datasource` block).
 
+## What is an ORM?
+
+ORM stands for **Object-Relational Mapper**. It maps between two worlds:
+
+| Database world | Your code world |
+|---|---|
+| Table | Class / Model |
+| Row | Object / instance |
+| Column | Property |
+| `SELECT` query | Method call |
+
+Without an ORM you write SQL strings:
+
+```ts
+const rows = await db.query("SELECT * FROM users WHERE age > 27")
+// rows is any[] — no types, typos fail at runtime
+```
+
+With Prisma you write TypeScript method calls:
+
+```ts
+const users = await prisma.user.findMany({ where: { age: { gt: 27 } } })
+// users is User[] — fully typed, typos fail at compile time
+```
+
+Both produce the same SQL under the hood. The ORM is a translation layer that lets you stay in TypeScript instead of writing SQL strings — and the typechecker keeps you honest.
+
 ## ORM vs raw SQL — the tradeoff
 
 | | Raw SQL (basics folder) | Prisma |

@@ -4,8 +4,9 @@
 -- Run with:  docker exec -i pg-learn psql -U postgres -d learn_pg < 04-queries.sql
 
 \echo '--- books between 1970 and 2010 ---'
-SELECT title, year
-FROM books
+SELECT title, year, a.name AS author
+FROM books AS b
+INNER JOIN authors AS a ON a.id = b.author_id
 WHERE year BETWEEN 1970 AND 2010
 ORDER BY year;
 

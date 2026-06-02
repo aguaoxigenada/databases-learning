@@ -40,6 +40,15 @@ INSERT INTO books (title, year, author_id) VALUES
     ('Exhalation',              2019, 2),
     ('The Fifth Season',        2015, 3);
 
+\echo '--- all authors ---'
+SELECT a.name, a.id
+FROM authors AS a;
+
+\echo '---all books (no join) ---'
+SELECT b.title, b.year
+FROM books AS b;
+
+
 \echo '--- books with their authors (INNER JOIN) ---'
 SELECT b.title, b.year, a.name AS author
 FROM books AS b
