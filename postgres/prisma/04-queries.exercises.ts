@@ -57,7 +57,9 @@ async function main() {
   console.log("--- ex1: 2000..2020 ---");
   console.log(
     await prisma.book.findMany({
-      // TODO: where year gte 2000 AND lte 2020; orderBy year asc; select title+year
+      where: { year: { gte: 2000, lte: 2020 } },
+      orderBy: { year: "asc" },
+      select: { title: true, year: true },
     }),
   );
 
@@ -65,7 +67,9 @@ async function main() {
   console.log("--- ex2: <1970 or >2015 ---");
   console.log(
     await prisma.book.findMany({
-      // TODO: where: { OR: [ ... , ... ] }
+      where: {
+        OR: [{ year: { lt: 1970 } }, { year: { gt: 2015 } }],
+      },
     }),
   );
 
@@ -73,7 +77,8 @@ async function main() {
   console.log("--- ex3: starts with 'The' ---");
   console.log(
     await prisma.book.findMany({
-      // TODO: where title startsWith "The"
+      where: { title: { startsWith: "The" } },
+      select: { title: true },
     }),
   );
 
@@ -81,7 +86,10 @@ async function main() {
   console.log("--- ex4: aggregates ---");
   console.log(
     await prisma.book.aggregate({
-      // TODO: _count, _min(year), _max(year), _avg(year)
+      _count: { _all: true },
+      _min: { year: true },
+      _max: { year: true },
+      _avg: { year: true },
     }),
   );
 
@@ -89,13 +97,21 @@ async function main() {
   console.log("--- ex5: per-author counts (with names) ---");
   const grouped = await prisma.book.groupBy({
     by: ["authorId"],
-    // TODO: add _count: { _all: true }
+    _count: { _all: true },
   });
+  console.log("Grouped by Author Id ");
+  console.log(grouped);
+
   const authorIds = grouped.map((g) => g.authorId);
+  console.log("Author Ids " + authorIds);
+
   const authors = await prisma.author.findMany({
     where: { id: { in: authorIds } },
   });
+  console.log(authors);
   const nameById = new Map(authors.map((a) => [a.id, a.name]));
+  console.log(nameById);
+
   for (const g of grouped) {
     // (works once your _count is in place)
     console.log(`${nameById.get(g.authorId)}: ${(g as any)._count?._all}`);
@@ -103,28 +119,36 @@ async function main() {
 
   // 6. Authors with 2 OR MORE books (groupBy + having).
   console.log("--- ex6: authors with >= 2 books ---");
-  console.log(
-    await prisma.book.groupBy({
-      by: ["authorId"],
-      _count: { _all: true },
-      // TODO: add a `having` that keeps groups with count >= 2
-    }),
-  );
+  const booksByAuthorId = await prisma.book.groupBy({
+    by: ["authorId"],
+    _count: { _all: true },
+    having: { authorId: { _count: { gte: 2 } } },
+  });
+
+  console.log(booksByAuthorId);
+
+  for (const g of booksByAuthorId) {
+    // (works once your _count is in place)
+    console.log(`${nameById.get(g.authorId)}: ${(g as any)._count?._all}`);
+  }
 
   // 7. The 2 OLDEST books (title + year).
   console.log("--- ex7: 2 oldest ---");
   console.log(
     await prisma.book.findMany({
-      // TODO: orderBy year asc, take 2, select title+year
+      orderBy: { year: "asc" },
+      take: 2,
+      select: { title: true, year: true },
     }),
   );
 
-  // 8. "Page 2" when page size is 2, ordered by year ascending.
+  // 8. "Page 2" when page size is 2 rows, ordered by year ascending.
   console.log("--- ex8: page 2 (size 2) ---");
   console.log(
     await prisma.book.findMany({
       orderBy: { year: "asc" },
-      // TODO: skip + take to land on the 3rd and 4th rows
+      skip: 2, // Skip the first 2 rows (page 1)
+      take: 2, // Take 2 rows (page 2)
     }),
   );
 
@@ -143,7 +167,7 @@ async function main() {
   console.log(
     await prisma.book.findMany({
       where: {
-        title: { contains: "the" /* TODO: add the option that ignores case */ },
+        title: { contains: "the", mode: "insensitive" },
       },
       select: { title: true },
     }),

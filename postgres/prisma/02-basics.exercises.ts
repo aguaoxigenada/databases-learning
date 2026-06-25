@@ -31,7 +31,8 @@ async function main() {
   console.log("--- ex1: names + emails only ---");
   console.log(
     await prisma.user.findMany({
-      // TODO: add a `select` so only name and email come back
+      select: { name: true, email: true },
+      // like SELECT name, age      // TODO: add a `select` so only name and email come back
     }),
   );
 
@@ -39,21 +40,25 @@ async function main() {
   //    Use the method meant for one row by a unique field (not findMany).
   console.log("--- ex2: just Diana ---");
   console.log(
+    await prisma.user.findUnique({
+      where: { email: "diana@example.com" },
+    }),
     // TODO: replace null with the right prisma.user.<method>({ where: ... })
-    null,
   );
 
   // 3. Count the users without pulling back the rows.
   console.log("--- ex3: how many users? ---");
   console.log(
+    await prisma.user.count(),
     // TODO: replace null with the prisma.user count call
-    null,
   );
 
   // 4. All users aged 28 or older, youngest -> oldest.
   console.log("--- ex4: 28+ sorted youngest first ---");
   console.log(
     await prisma.user.findMany({
+      where: { age: { gt: 28 } },
+      orderBy: { age: "asc" },
       // TODO: add `where` (age >= 28) and `orderBy` (age ascending)
     }),
   );
@@ -62,6 +67,7 @@ async function main() {
   console.log("--- ex5: age != 35 ---");
   console.log(
     await prisma.user.findMany({
+      where: { age: { not: 35 } },
       // TODO: add a `where` using the `not` operator
     }),
   );
@@ -70,26 +76,50 @@ async function main() {
   console.log("--- ex6: Alice or Charlie ---");
   console.log(
     await prisma.user.findMany({
-      // TODO: add a `where` using the `in` operator on `name`
+      where: {
+        name: {
+          in: ["Alice", "Charlie"],
+        },
+      },
     }),
   );
 
   // 7. Insert a new user with NO age set, then read it back.
   //    What does `age` come back as?
   console.log("--- ex7: user with no age ---");
-  // TODO: create a user (name + unique email, no age field) here
+  await prisma.user.create({
+    data: { name: "NO AGE", email: "noage@example.com", age: null },
+  });
+
+  console.log(
+    await prisma.user.findUnique({
+      where: { email: "noage@example.com" },
+    }),
+  );
 
   console.log(await prisma.user.findMany());
 
   // 8. Give EVERY user one extra year of age in a single call.
   console.log("--- ex8: everyone +1 year ---");
-  // TODO: one updateMany using the `increment` operator
-  console.log(await prisma.user.findMany({ select: { name: true, age: true } }));
+  await prisma.user.updateMany({
+    data: {
+      age: {
+        increment: 1,
+      },
+    },
+  });
+
+  console.log(
+    await prisma.user.findMany({ select: { name: true, age: true } }),
+  );
 
   // 9. Try to insert a SECOND user with email diana@example.com.
   //    Wrap it in try/catch and log which constraint blew up.
   console.log("--- ex9: duplicate email ---");
   try {
+    await prisma.user.create({
+      data: { name: "DUPLICATE", email: "diana@example.com", age: null },
+    });
     // TODO: create a user with email "diana@example.com" again
   } catch (e) {
     console.log("blocked:", (e as Error).message);

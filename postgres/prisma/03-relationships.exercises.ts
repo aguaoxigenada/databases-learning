@@ -57,7 +57,8 @@ async function main() {
   // 1. Every book with its author's name, sorted by TITLE (A->Z).
   console.log("--- ex1: books + author, by title ---");
   const books = await prisma.book.findMany({
-    // TODO: include the author, and orderBy title ascending
+    include: { author: true },
+    orderBy: { title: "asc" },
   });
   for (const b of books) {
     // (this line works once your `include` is in place)
@@ -69,7 +70,7 @@ async function main() {
   console.log(
     await prisma.author.findFirst({
       where: { name: "Ted Chiang" },
-      // TODO: include his books
+      include: { books: true },
     }),
   );
 
@@ -77,14 +78,16 @@ async function main() {
   console.log("--- ex3: post-2000 books + author ---");
   console.log(
     await prisma.book.findMany({
-      // TODO: where year > 2000, and include the author
+      where: { year: { gt: 2000 } },
+      include: { author: true },
     }),
   );
 
   // 4. Every author with their book count, but ONLY authors with >= 1 book.
   console.log("--- ex4: authors with at least one book ---");
   const authors = await prisma.author.findMany({
-    // TODO: where they have `some` books; include `_count` of books
+    where: { books: { some: {} } },
+    include: { _count: { select: { books: true } } },
   });
   for (const a of authors) {
     console.log(`${a.name}: ${(a as any)._count?.books}`);
@@ -95,12 +98,29 @@ async function main() {
   const leguin = await prisma.author.findFirstOrThrow({
     where: { name: "Ursula K. Le Guin" },
   });
-  // TODO: prisma.book.create(...) with title, year, and authorId: leguin.id
+
+  await prisma.book.create({
+    data: { title: "Orphan", year: 2024, authorId: leguin.id },
+  });
+
+  console.log("--- Ursula Books --Hard Search-");
+  const ursulaBooks = await prisma.author.findMany({
+    where: { name: "Ursula K. Le Guin" },
+    include: { books: { orderBy: { title: "asc" } } },
+  });
+  for (const b of ursulaBooks[0].books) {
+    // (this line works once your `include` is in place)
+    console.log(`${b.title} — ${ursulaBooks[0].name}`);
+  }
 
   // 6. Same idea, the OTHER way: update the author with a nested book create.
   console.log("--- ex6: add a book via nested write ---");
-  // TODO: prisma.author.update({ where: { id: leguin.id }, data: { books: { create: ... } } })
+  prisma.author.update({
+    where: { id: leguin.id },
+    data: { books: { create: { title: "The Cornered", year: 1994 } } },
+  });
 
+  // SIMPLE SEARCH
   console.log(
     await prisma.author.findUnique({
       where: { id: leguin.id },
@@ -113,13 +133,24 @@ async function main() {
   const chiang = await prisma.author.findFirstOrThrow({
     where: { name: "Ted Chiang" },
   });
-  // TODO: delete his books first, then the author (two calls)
+
+  await prisma.book.deleteMany({ where: { authorId: chiang.id } });
+  await prisma.author.deleteMany({ where: { id: chiang.id } });
+
+  const actualBooks = await prisma.book.findMany({
+    include: { author: true },
+    orderBy: { title: "asc" },
+  });
+  for (const b of actualBooks) {
+    console.log(`${b.title} — ${(b as any).author?.name}`);
+  }
 
   // 8. Find authors with NO books at all.
   console.log("--- ex8: authors with zero books ---");
   console.log(
     await prisma.author.findMany({
-      // TODO: where books `none` match
+      where: { books: { none: {} } },
+      include: { books: true },
     }),
   );
 }

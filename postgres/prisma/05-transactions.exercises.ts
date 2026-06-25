@@ -29,16 +29,30 @@ async function main() {
   // 1. Transfer 20 from Bob -> Alice using the ARRAY form of $transaction.
   console.log("--- ex1: array-form transfer (Bob -> Alice, 20) ---");
   await prisma.$transaction([
-    // TODO: updateMany to decrement Bob by 20
-    // TODO: updateMany to increment Alice by 20
+    prisma.account.updateMany({
+      where: { owner: "Bob" },
+      data: { balance: { decrement: 20 } },
+    }),
+    prisma.account.updateMany({
+      where: { owner: "Alice" },
+      data: { balance: { increment: 20 } },
+    }),
   ]);
   console.log(await prisma.account.findMany());
 
   // 2. Transfer 10 Alice -> Bob using the CALLBACK form.
   console.log("--- ex2: callback-form transfer (Alice -> Bob, 10) ---");
   await prisma.$transaction(async (tx) => {
-    // TODO: decrement Alice by 10, increment Bob by 10 (two tx.account.updateMany calls)
+    await tx.account.updateMany({
+      where: { owner: "Alice" },
+      data: { balance: { decrement: 10 } },
+    });
+    await tx.account.updateMany({
+      where: { owner: "Bob" },
+      data: { balance: { increment: 10 } },
+    });
   });
+
   console.log(await prisma.account.findMany());
 
   // 3. Demonstrate ROLLBACK: inside a callback, move 40 Alice -> Bob, then
@@ -46,8 +60,15 @@ async function main() {
   console.log("--- ex3: rollback on throw ---");
   try {
     await prisma.$transaction(async (tx) => {
-      // TODO: do the two updates here...
-      // TODO: ...then `throw new Error("boom")` to force the rollback
+      await tx.account.updateMany({
+        where: { owner: "Alice" },
+        data: { balance: { decrement: 10 } },
+      });
+      await tx.account.updateMany({
+        where: { owner: "Bob" },
+        data: { balance: { increment: 10 } },
+      });
+      throw new Error("Boom");
     });
   } catch (e) {
     console.log("rolled back:", (e as Error).message);
@@ -59,10 +80,25 @@ async function main() {
   console.log("--- ex4: guarded transfer, should reject ---");
   try {
     await prisma.$transaction(async (tx) => {
-      const bob = await tx.account.findFirstOrThrow({ where: { owner: "Bob" } });
+      const bob = await tx.account.findFirstOrThrow({
+        where: { owner: "Bob" },
+      });
       const next = bob.balance - 200;
-      // TODO: if `next` < 0, throw an Error explaining why
-      // TODO: otherwise update Bob to `next` and credit Alice by 200
+
+      if (next < 0) {
+        throw new Error(
+          `Refusing transfer: Bob would go to ${next} (must stay >= 0)`,
+        );
+      }
+
+      await tx.account.update({
+        where: { id: bob.id },
+        data: { balance: next },
+      });
+      await tx.account.updateMany({
+        where: { owner: "Alice" },
+        data: { balance: { decrement: 200 } },
+      });
     });
   } catch (e) {
     console.log("rejected:", (e as Error).message);
@@ -72,10 +108,20 @@ async function main() {
   // 5. Same guard, but a transfer that SUCCEEDS: move 30 Alice -> Bob.
   console.log("--- ex5: guarded transfer, should succeed ---");
   await prisma.$transaction(async (tx) => {
-    const alice = await tx.account.findFirstOrThrow({ where: { owner: "Alice" } });
+    const alice = await tx.account.findFirstOrThrow({
+      where: { owner: "Alice" },
+    });
     const next = alice.balance - 30;
     if (next < 0) throw new Error("insufficient funds");
-    // TODO: update Alice to `next`, and increment Bob by 30
+
+    await tx.account.updateMany({
+      where: { owner: "Alice" },
+      data: { balance: next },
+    });
+    await tx.account.updateMany({
+      where: { owner: "Bob" },
+      data: { balance: { increment: 30 } },
+    });
   });
   console.log(await prisma.account.findMany());
 
@@ -87,8 +133,7 @@ async function main() {
       await tx.account.findMany();
     },
     {
-      // TODO: set isolationLevel to Serializable
-      // (use Prisma.TransactionIsolationLevel.* — already imported above)
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     },
   );
   console.log("isolation-level transaction committed");
