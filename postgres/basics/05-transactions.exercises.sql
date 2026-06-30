@@ -26,21 +26,19 @@ SELECT * FROM accounts;
 
 
 \echo '--- ex1: transfer 20 from Alice to Bob, atomically ---'
--- TODO: between BEGIN and COMMIT, write the two UPDATEs
---       (decrement Alice by 20, increment Bob by 20)
 BEGIN;
-    -- TODO: UPDATE accounts ... Alice -20
-    -- TODO: UPDATE accounts ... Bob  +20
+    UPDATE accounts SET balance = balance - 20 WHERE owner = 'Alice';
+    UPDATE accounts SET balance = balance + 20 WHERE owner = 'Bob';
 COMMIT;
 SELECT * FROM accounts;
 
 
 \echo '--- ex2: a transfer that VIOLATES the CHECK, then rolls back ---'
--- TODO: inside this block, try to take 200 from Bob (he has 50).
 --       The CHECK rejects it and aborts the transaction; ROLLBACK ends it.
 BEGIN;
-    -- TODO: UPDATE accounts SET balance = balance - 200 WHERE owner = 'Bob';
+    UPDATE accounts SET balance = balance + 200 WHERE owner = 'Bob';
 ROLLBACK;
+
 \echo '   (balances should be unchanged below)'
 SELECT * FROM accounts;
 
@@ -49,11 +47,11 @@ SELECT * FROM accounts;
 -- Goal: apply a -10 to Alice, ATTEMPT a bad update, undo only the bad update
 -- with ROLLBACK TO SAVEPOINT, then still commit the good -10 and a +10 to Bob.
 BEGIN;
-    -- TODO: UPDATE Alice -10
+    UPDATE accounts SET balance = balance - 10 WHERE owner = 'Alice';
     SAVEPOINT before_risky;
-        -- TODO: an update that fails the CHECK (e.g. Alice -9999)
+    UPDATE accounts SET balance = balance - 999 WHERE owner = 'Alice';
     ROLLBACK TO SAVEPOINT before_risky;
-    -- TODO: UPDATE Bob +10
+    UPDATE accounts SET balance = balance + 10 WHERE owner = 'Bob';
 COMMIT;
 SELECT * FROM accounts;
 

@@ -11,6 +11,40 @@ A **single-process, in-memory, key-value data-structure server.** Unpacking that
 - **Key-value** — you look things up by a string key. No joins, no WHERE clauses, no ad-hoc queries across the dataset. If you want it back, you need to remember its key.
 - **Data-structure server** — the "value" isn't just a blob. Redis understands several real data structures (strings, hashes, lists, sets, sorted sets, streams, bitmaps, hyperloglogs, geospatial indexes) and gives you operations on them.
 
+## "In-memory" — whose RAM?
+
+The **server's**. When you started the `redis-learn` container, you started a **Redis server process**, and it keeps all its keys and values in **its own RAM** — the memory of whatever machine that process runs on. Locally that's your laptop/WSL2 host; in production it's a dedicated server (or a managed service like AWS ElastiCache / Redis Cloud).
+
+The browser is never involved and can't talk to Redis directly.
+
+```
+┌─────────────────────────────────────────────┐
+│  The server machine (your laptop, locally)    │
+│   ┌──────────────────────────────┐            │
+│   │  Redis server process         │            │
+│   │   ┌───────────────────────┐   │            │
+│   │   │  RAM (this process's   │  │ ← data lives HERE
+│   │   │  memory)               │  │            │
+│   │   │   session:abc123 → 42  │  │            │
+│   │   └───────────────────────┘  │            │
+│   └──────────────────────────────┘            │
+│            ▲  TCP :6379                        │
+│   ┌────────┴─────────┐                         │
+│   │ redis-cli /       │ ← CLIENTS: they just   │
+│   │ your ioredis app  │   ask "GET ..." over   │
+│   └──────────────────┘    the network          │
+└───────────────────────────────────────────────┘
+```
+
+`redis-cli` and your Node/ioredis app are **clients** — they send commands over a TCP connection (port `6379`) and get answers back. They don't hold the data; they borrow it.
+
+Why it matters:
+
+- **It's the server's RAM, so it's limited and expensive.** A dataset that's 8 GB of keys costs 8 GB of physical memory. This is why Redis holds *hot* data (sessions, caches, counters), not your entire history.
+- **RAM is volatile → restart wipes it** unless persistence (RDB snapshots / AOF) is on. That's the tradeoff for being fast.
+
+**Mental model:** Redis is a program on a server holding its data in *that server's RAM*; your CLI and app just phone in over the network. Compare Postgres: same client/server shape, but Postgres keeps data on **disk** (RAM as cache) while Redis keeps it in **RAM** (disk as optional backup) — that one flip is the whole personality difference.
+
 ## Shape vs SQL — worked example
 
 You want to store a user session.
@@ -76,6 +110,71 @@ Think of it as your "schema": keys organised hierarchically so you can reason ab
 | **Set** | unordered collection of unique strings | tags, unique-visitor tracking |
 | **Sorted set** | set where each member has a numeric score; auto-sorted | leaderboards, priority queues, time-ordered events |
 | **Stream** | append-only log, consumer groups | event processing (Kafka-lite). Beyond this tutorial. |
+
+### What each one actually looks like
+
+**String** — the simplest: one key holds one value. (Redis stores numbers as strings too, so the same type powers counters.)
+```
+SET user:42:name "Max"
+INCR page:hits:2026-06-30      # 1 → if missing, starts at 0 then +1
+INCR page:hits:2026-06-30      # 2
+
+    user:42:name          →  "Max"
+    page:hits:2026-06-30   →  "2"
+```
+
+**Hash** — one key holds a small map of field→value. Think of it as a single "row" without a table.
+```
+HSET user:42 name "Max" age 30 city "Lima"
+HGET user:42 city            # "Lima"
+HGETALL user:42              # all fields at once
+
+    user:42  ┌─ name → "Max"
+             ├─ age  → "30"
+             └─ city → "Lima"
+```
+
+**List** — an ordered sequence; you push and pop from either end. Order is insertion order.
+```
+RPUSH tasks "email"          # append to the right
+RPUSH tasks "report"
+LPUSH tasks "urgent"         # prepend to the left
+LRANGE tasks 0 -1            # ["urgent", "email", "report"]
+
+    tasks:  [ "urgent" , "email" , "report" ]
+             ^head                  ^tail
+```
+
+**Set** — an unordered bag of *unique* members. Adding a duplicate is a no-op.
+```
+SADD tags:post:7 "redis" "db" "redis"   # "redis" stored once
+SMEMBERS tags:post:7                     # {"redis", "db"} (order not guaranteed)
+SISMEMBER tags:post:7 "db"               # 1 (true)
+
+    tags:post:7  →  { "redis", "db" }
+```
+
+**Sorted set** — like a set, but every member carries a numeric *score*, and Redis keeps it sorted by that score. This is what makes leaderboards one command.
+```
+ZADD leaderboard 100 "max" 250 "ana" 175 "leo"
+ZREVRANGE leaderboard 0 2 WITHSCORES     # top 3, highest first
+
+    leaderboard (sorted by score):
+        "max" → 100
+        "leo" → 175
+        "ana" → 250   ← highest
+```
+
+**Stream** — an append-only log of entries, each with an auto ID (`timestamp-sequence`) and field→value pairs. Consumers read forward through it.
+```
+XADD events * type "login" user "42"
+XADD events * type "logout" user "42"
+XRANGE events - +            # read all entries in order
+
+    events:
+        1719772800000-0  →  { type: "login",  user: "42" }
+        1719772800500-0  →  { type: "logout", user: "42" }
+```
 
 ## How you'll interact with Redis
 

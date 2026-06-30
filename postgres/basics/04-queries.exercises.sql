@@ -34,48 +34,59 @@ INSERT INTO books (title, year, author_id) VALUES
     ('Exhalation',              2019, 2),
     ('The Fifth Season',        2015, 3);
 SELECT setval(pg_get_serial_sequence('authors', 'id'), (SELECT MAX(id) FROM authors));
-
+--  Sets the sequence's next value to the MAX ID
+--  The next inserted row will get max_id + 1
 
 \echo '--- ex1: books published between 2000 and 2020 inclusive, oldest first ---'
 -- TODO: add WHERE year BETWEEN 2000 AND 2020, and ORDER BY year
-SELECT title, year FROM books;
+SELECT title, year FROM books
+WHERE year BETWEEN 2000 AND 2020
+ORDER BY year;
 
 
 \echo '--- ex2: books published before 1970 OR after 2015 ---'
--- TODO: add a WHERE using OR (year < 1970 OR year > 2015)
-SELECT title, year FROM books;
+SELECT title, year FROM books
+WHERE (year < 1970 OR year > 2015)
+ORDER BY year;
 
 
 \echo '--- ex3: books whose title STARTS WITH "The" ---'
--- TODO: add WHERE title LIKE 'The%'
-SELECT title FROM books;
+SELECT title FROM books WHERE title LIKE 'The%';
 
 
 \echo '--- ex4: count, oldest year, newest year, average year (rounded) ---'
--- TODO: replace the columns with COUNT(*), MIN(year), MAX(year), ROUND(AVG(year))
-SELECT title FROM books;
+SELECT COUNT(*)          AS total_books,
+       MIN(year)         AS oldest,
+       MAX(year)         AS newest,
+       ROUND(AVG(year))  AS avg_year
+FROM books;
 
 
 \echo '--- ex5: per-author book counts, with author names ---'
--- TODO: JOIN authors->books, GROUP BY a.id, a.name, and COUNT the books
-SELECT a.name
-FROM authors AS a;
-
+SELECT a.name, COUNT(b.id) AS amount
+FROM authors AS a
+JOIN books AS b ON b.author_id = a.id
+GROUP BY a.id, a.name;
 
 \echo '--- ex6: authors with 2 OR MORE books ---'
 -- TODO: like ex5, but add HAVING COUNT(b.id) >= 2
-SELECT a.name
-FROM authors AS a;
+SELECT a.name, COUNT(b.id) AS amount
+FROM authors AS a
+JOIN books AS b ON b.author_id = a.id
+GROUP BY a.id, a.name
+HAVING COUNT(b.id) >= 2;
 
 
 \echo '--- ex7: the 2 OLDEST books ---'
--- TODO: ORDER BY year ascending, then LIMIT 2
-SELECT title, year FROM books;
+SELECT title, year FROM books ORDER BY year ASC LIMIT 2;
 
 
 \echo '--- ex8: "page 2" when page size is 2, ordered by year ascending ---'
--- TODO: ORDER BY year, then LIMIT 2 OFFSET 2  (rows 3 and 4)
-SELECT title, year FROM books;
+SELECT title, year 
+FROM books 
+ORDER BY year
+LIMIT 2 OFFSET 2;
+
 
 
 \echo '--- ex9: titles containing "the" with case-SENSITIVE LIKE ---'
@@ -84,6 +95,4 @@ SELECT title FROM books WHERE title LIKE '%the%';
 
 
 \echo '--- ex10: same search, now case-INSENSITIVE ---'
--- TODO: change LIKE to the case-insensitive operator so "The Dispossessed"
---       and "The Fifth Season" match
-SELECT title FROM books WHERE title LIKE '%the%';
+SELECT title FROM books WHERE title ILIKE '%the%';

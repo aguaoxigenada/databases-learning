@@ -28,46 +28,45 @@ INSERT INTO users (name, email, age) VALUES
 
 
 \echo '--- ex1: every user, ONLY name and email ---'
--- TODO: replace the * with just the two columns name, email
-SELECT * FROM users;
+SELECT name, email
+FROM users;
 
 
 \echo '--- ex2: just the user whose email is diana@example.com ---'
--- TODO: add a WHERE clause matching that email
-SELECT * FROM users;
-
+SELECT * FROM users
+WHERE email = 'diana@example.com';
 
 \echo '--- ex3: how many users are there? ---'
--- TODO: rewrite this so it returns the row COUNT, not the rows
-SELECT * FROM users;
+SELECT COUNT(*) FROM users;
+
 
 
 \echo '--- ex4: users aged 28 or older, youngest first ---'
 -- TODO: add WHERE (age >= 28) and ORDER BY (age ascending)
-SELECT name, age FROM users;
-
+SELECT name, age FROM users
+WHERE age >= 28
+ORDER BY age ASC;
 
 \echo '--- ex5: users whose age is NOT 35 ---'
--- TODO: add a WHERE using <> (or !=)
-SELECT name, age FROM users;
+SELECT name, age FROM users
+WHERE age != 35;
 
 
 \echo '--- ex6: the users named Alice or Charlie (one query) ---'
--- TODO: add a WHERE using IN ('Alice', 'Charlie')
-SELECT name FROM users;
+SELECT name FROM users
+WHERE name = 'Alice' OR name = 'Charlie';  
 
 
 \echo '--- ex7: insert a new user with NO age, then list everyone ---'
--- TODO: write an INSERT with name + a unique email, leaving age out
---       (so it defaults to NULL)
+INSERT INTO users (name, email) VALUES ('James', 'hey@atamail.com');
 SELECT name, age FROM users ORDER BY id;
 
 
 \echo '--- ex8: give EVERY user one extra year of age ---'
--- TODO: write one UPDATE that sets age = age + 1 for all rows
+UPDATE users SET age = age + 1;
 SELECT name, age FROM users ORDER BY id;
 
 
 \echo '--- ex9: try to insert a SECOND diana@example.com (should fail) ---'
--- TODO: write an INSERT reusing email 'diana@example.com' and read the error.
---       Which constraint blocks it?
+INSERT INTO users (name, email) VALUES ('Bank', 'diana@example.com');
+

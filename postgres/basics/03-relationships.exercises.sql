@@ -49,31 +49,40 @@ SELECT setval(pg_get_serial_sequence('authors', 'id'), (SELECT MAX(id) FROM auth
 
 \echo '--- ex1: every book with its author name, sorted by TITLE (A->Z) ---'
 -- TODO: INNER JOIN books to authors on author_id = authors.id, ORDER BY title
-SELECT b.title, b.year
-FROM books AS b;
+SELECT b.title, b.year, a.name AS author
+FROM books AS b
+INNER JOIN authors AS a ON a.id = b.author_id
+ORDER BY b.title;
+
 
 
 \echo '--- ex2: all of Ted Chiang''s books ---'
--- TODO: join books to authors and add a WHERE on the author name
-SELECT b.title, b.year
-FROM books AS b;
+SELECT a.name, b.title AS book
+FROM authors AS a
+LEFT JOIN books AS b ON b.author_id = a.id
+WHERE a.name = 'Ted Chiang'
+ORDER BY b.title;
+
 
 
 \echo '--- ex3: books published AFTER 2000, with author name ---'
--- TODO: join to authors AND add WHERE b.year > 2000
-SELECT b.title, b.year
-FROM books AS b;
+SELECT b.title, b.year, a.name AS author
+FROM books AS b
+INNER JOIN authors AS a ON a.id = b.author_id
+WHERE b.year > 2000;
 
 
 \echo '--- ex4: every author with their book count, only those with >= 1 book ---'
--- TODO: INNER JOIN authors->books, GROUP BY a.id, a.name
 --       (an INNER JOIN naturally drops the book-less author)
-SELECT a.name
-FROM authors AS a;
+SELECT a.name, COUNT(b.id) AS book_count
+FROM authors AS a
+INNER JOIN books AS b ON b.author_id = a.id
+GROUP BY a.id, a.name
+HAVING COUNT(b.id) >= 1;
 
 
 \echo '--- ex5: add a new book for Ursula K. Le Guin (author_id 1) ---'
--- TODO: INSERT a row into books with title, year, and author_id = 1
+INSERT INTO books (title, year, author_id) VALUES ('Greg the Great', '2010', 1);
 SELECT title, year, author_id FROM books WHERE author_id = 1;
 
 
@@ -81,10 +90,14 @@ SELECT title, year, author_id FROM books WHERE author_id = 1;
 -- TODO: two DELETEs. Which table must go first, and why?
 --   1) DELETE the books where author_id = 2
 --   2) DELETE the author with id = 2
+
+DELETE FROM books WHERE author_id = '2';
+DELETE FROM authors WHERE id = '2';
 SELECT name FROM authors ORDER BY id;
 
 
 \echo '--- ex7: authors with NO books at all ---'
 -- TODO: LEFT JOIN authors->books and keep rows where the book side IS NULL
-SELECT a.name
-FROM authors AS a;
+SELECT a.name, b.title AS titles
+FROM authors AS a
+LEFT JOIN books AS b ON b.author_id = a.id;
